@@ -2,7 +2,7 @@
   name = "Home"
   identifier = "home"
   weight = 100
-  url = "/"
+  url = "/about/"
 
   [[main]]
   name = "Posts"
@@ -10,20 +10,4 @@
   identifier = "posts"
   url = "/post/"
 
-  [[main]]
-  name = "About"
-  weight = 300
-  identifier = "about"
-  url = "/about/"
 
-  [[main]]
-  name = "Contact"
-  weight = 400
-  identifier = "contact"
-  url = "/contact/"
-
-  [[footer]]
-  name = "imprint"
-  weight = 1
-  identifier = "imprint"
-  url = "/imprint/"
