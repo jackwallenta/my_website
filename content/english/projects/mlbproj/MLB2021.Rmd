@@ -1,0 +1,162 @@
+---
+date: "2021-10-11"
+title: 2021 MLB
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, fig.height = 3)
+library(tidyverse)
+library(scales)
+library(lubridate)
+## Note: this code assumes viridis.R is two steps up the file directory tree
+## Comment it out and use the line below if the file is in the same directory
+## Or comment out both lines if you do not have the file
+source("viridis.R")
+```
+
+```{r, include = FALSE}
+## data from baseball-reference.com
+read_mlb = function(file)
+{
+  ## regex to separate player names from ids
+  sep_string = "[*#]?\\\\"
+  
+  temp = read_csv(file) %>% 
+    separate(Name, into = c("Name", "ID"), sep = sep_string) %>% 
+    select(-Rk)
+  
+  return ( temp )
+}
+
+player_bat_basic = read_mlb("mlb-2021-player-batting-basic.csv")
+player_bat_value = read_mlb("mlb-2021-player-batting-value.csv")
+player_pitch_basic = read_mlb("mlb-2021-player-pitching-basic.csv")
+player_pitch_value = read_mlb("mlb-2021-player-pitching-value.csv")
+
+team_bat = read_csv("mlb-2021-team-batting.csv")
+team_pitch = read_csv("mlb-2021-team-pitching.csv")
+
+standings = read_csv("mlb-2021-standings.csv") %>% 
+  select(-Rk)
+
+divisions = standings %>% 
+  select(Tm) %>% 
+  mutate(Division = case_when(
+    str_detect(Tm, "Rays|Red Sox|Yankees|Blue Jays|Orioles") ~ "AL East",
+    str_detect(Tm, "White Sox|Indians|Tigers|Royals|Twins") ~ "AL Central",
+    str_detect(Tm, "Astros|Mariners|Athletics|Angels|Rangers") ~ "AL West",
+    str_detect(Tm, "Braves|Phillies|Mets|Marlins|Nationals") ~ "NL East",
+    str_detect(Tm, "Brewers|Cardinals|Cubs|Reds|Pirates") ~ "NL Central",
+    str_detect(Tm, "Giants|Dodgers|Padres|Rockies|Diamondbacks") ~ "NL West"))
+
+abbr = player_bat_basic %>% 
+  select(Tm) %>% 
+  distinct() %>% 
+  filter(Tm != "TOT") %>% 
+  arrange(Tm) %>%
+  mutate(Team = (divisions %>%
+                   select(Tm) %>% 
+                   arrange(Tm) %>% 
+                   ## Seatle > San Francisco but SEA < SFO
+                   mutate(ord = c(1:23,25,24,26:30)) %>% 
+                   arrange(ord) %>% 
+                   pull(Tm))) %>% 
+  rename(Abbr = Tm) %>% 
+  relocate(Team, Abbr)
+```
+
+In the following code, I created a data frame for each team in the MLB using data from four different csv files. For each team, I selected their name, abbreviation, division, league, # of wins, # of losses, and overall record (as a percentage). Then, I arranged the teams by winning percentage within each division.
+
+```{r}
+q2_1 <- abbr %>% 
+  select(Team, Abbr)
+
+q2_2 <- player_bat_basic %>% 
+  select(Lg)
+
+q2_3 <- divisions %>% 
+  select(Tm, Division) %>% 
+  rename(Team = Tm) %>% 
+  arrange(Team)
+
+q2_4 <- standings %>% 
+  select(Tm, W, L) %>% 
+  rename(Team = Tm) %>% 
+  arrange(Team)
+
+q2 <- left_join(q2_1, q2_3)
+
+q2 <- q2 %>% 
+  mutate(League = case_when(
+    str_sub(Division,1,1) == "N" ~ "NL", 
+    str_sub(Division,1,1) == "A" ~ "AL"))
+
+q2 <- left_join(q2, q2_4)
+
+q2 <- q2 %>% 
+  mutate(Pct = ((W/(W+L)) * 100)) %>% 
+  arrange(Division, desc(Pct))
+
+q2
+```
+
+Using the data frame created above, I created a new column named “Place” to display where each team finished in their division. I reshaped the data frame to have “Place” and the six MLB divisions as columns, while rows contained team abbreviations based on their placement in their division. Unfortunately, my Twins finished last in the AL Central…
+
+```{r}
+q3_1 <- q2 %>% 
+  select(Abbr, Division) %>% 
+  mutate(Place = c(1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5))
+
+q3 <- q3_1 %>% 
+  group_by(Division) %>% 
+  pivot_wider(names_from = Division, values_from = Abbr)
+q3
+```
+Some are calling Shohei Ohtani, who had an historic season in 2021, the modern day Babe Ruth. I decided to search for other pitchers who swung that bat quite a bit in 2021.
+
+I began by filtering the csv files to find players that had 50+ plate appearances (PA) AND 50+ innings pitched (IP). After finding these players, I created a data frame that joined their batting stats (PA, BA, HR, OPS) and pitching stats (IP, ERA, SO) while retaining their names and team abbreviations. Finally, I sorted the data frame by OPS from highest to lowest.
+
+```{r}
+q4_1 <- player_bat_basic %>% 
+  filter(PA >= 50)
+q4_2 <- player_pitch_basic %>% 
+  filter(IP >= 50)
+
+q4 <- q4_1 %>% 
+  semi_join(q4_2, by = "ID")
+
+q4ids <- q4 %>% 
+  pull(ID)
+
+checkids <- str_c(q4ids, collapse = "|")
+
+ans1 <-  q4_1 %>% 
+  filter(str_detect(ID, checkids)) %>% 
+  select(Name, Tm, PA, BA, HR, OPS)
+n = 0
+ans2 <-  q4_2 %>% 
+  filter(str_detect(ID, checkids)) %>% 
+  select(Name, ERA, SO, IP)
+
+ans <- ans1 %>% 
+  full_join(ans2) %>% 
+  arrange(desc(OPS))
+
+ans <- ans %>% 
+  mutate(rep = case_when(
+    str_sub(Name) == "Jon Lester" & (!ERA == 4.71) ~ "repeat", 
+    str_sub(Name) == "Max Scherzer" & (!ERA == 2.46) ~ "repeat")) %>% 
+  filter(is.na(rep)) %>% 
+  select(-rep) %>% 
+  print(n = 10, width = Inf)
+
+```
+
+Last, I created a boxplot that represents the OPS’s of the players from the data frame above.
+
+```{r}
+ggplot(data = ans, mapping = aes(y = OPS)) + 
+  geom_boxplot() + 
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+```

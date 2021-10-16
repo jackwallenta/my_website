@@ -5,12 +5,12 @@ author = "Jack Wallenta"
 description = "Welcome to my website!"
 profilePicture = "images/compositesoph.jpg"
 keywords = ""
-favicon = "favicons/"
+favicon = "favicons/jicon.ico" 
 # example ["css/custom.css"]
 customCss = []
 # example ["js/custom.js"]
 customJs = [] 
-mainSections = ["post"]
+mainSections = ["projects"]
 images = ["images/site-feature-image.png"]
 doNotLoadAnimations = false
 # Form Spree Contact Form
@@ -19,14 +19,14 @@ doNotLoadAnimations = false
 #googleFonts = ["Indie+Flower", "Roboto:ital,wght@0,100;0,400;0,700;1,400"]
 # Google Site Verify
 #googleSiteVerify = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-singleDateFormat = "2/1/2006"
-indexDateFormat = "2/1/2006"
-listDateFormat = "2/1/2006"
+#singleDateFormat = "03/28/2006"
+#ndexDateFormat = "03/28/2006"
+#listDateFormat = "03/28/2006"
 # Commento Comments
 # CommentoURL = "https://commento.example.com/js/commento.js"
 # Read More links for truncated summaries
-# readMore = true
-# postSectionName = "blog"
+#readMore = true
+#postSectionName = "blog"
 
 
 [simpleAnalytics]

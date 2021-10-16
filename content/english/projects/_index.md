@@ -5,8 +5,8 @@ aliases:
 - blog
 - showcase
 - docs
-author: Hugo Authors
+author: Jack Wallenta
 tags:
 - index
-title: Posts
+title: Projects
 ---

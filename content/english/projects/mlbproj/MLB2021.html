@@ -1,0 +1,124 @@
+---
+date: "2021-10-11"
+title: 2021 MLB
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<p>In the following code, I created a data frame for each team in the MLB using data from four different csv files. For each team, I selected their name, abbreviation, division, league, # of wins, # of losses, and overall record (as a percentage). Then, I arranged the teams by winning percentage within each division.</p>
+<pre class="r"><code>q2_1 &lt;- abbr %&gt;% 
+  select(Team, Abbr)
+
+q2_2 &lt;- player_bat_basic %&gt;% 
+  select(Lg)
+
+q2_3 &lt;- divisions %&gt;% 
+  select(Tm, Division) %&gt;% 
+  rename(Team = Tm) %&gt;% 
+  arrange(Team)
+
+q2_4 &lt;- standings %&gt;% 
+  select(Tm, W, L) %&gt;% 
+  rename(Team = Tm) %&gt;% 
+  arrange(Team)
+
+q2 &lt;- left_join(q2_1, q2_3)
+
+q2 &lt;- q2 %&gt;% 
+  mutate(League = case_when(
+    str_sub(Division,1,1) == &quot;N&quot; ~ &quot;NL&quot;, 
+    str_sub(Division,1,1) == &quot;A&quot; ~ &quot;AL&quot;))
+
+q2 &lt;- left_join(q2, q2_4)
+
+q2 &lt;- q2 %&gt;% 
+  mutate(Pct = ((W/(W+L)) * 100)) %&gt;% 
+  arrange(Division, desc(Pct))
+
+q2</code></pre>
+<pre><code>## # A tibble: 30 × 7
+##    Team               Abbr  Division   League     W     L   Pct
+##    &lt;chr&gt;              &lt;chr&gt; &lt;chr&gt;      &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1 Chicago White Sox  CHW   AL Central AL        93    69  57.4
+##  2 Cleveland Indians  CLE   AL Central AL        80    82  49.4
+##  3 Detroit Tigers     DET   AL Central AL        77    85  47.5
+##  4 Kansas City Royals KCR   AL Central AL        74    88  45.7
+##  5 Minnesota Twins    MIN   AL Central AL        73    89  45.1
+##  6 Tampa Bay Rays     TBR   AL East    AL       100    62  61.7
+##  7 Boston Red Sox     BOS   AL East    AL        92    70  56.8
+##  8 New York Yankees   NYY   AL East    AL        92    70  56.8
+##  9 Toronto Blue Jays  TOR   AL East    AL        91    71  56.2
+## 10 Baltimore Orioles  BAL   AL East    AL        52   110  32.1
+## # … with 20 more rows</code></pre>
+<p>Using the data frame created above, I created a new column named “Place” to display where each team finished in their division. I reshaped the data frame to have “Place” and the six MLB divisions as columns, while rows contained team abbreviations based on their placement in their division. Unfortunately, my Twins finished last in the AL Central…</p>
+<pre class="r"><code>q3_1 &lt;- q2 %&gt;% 
+  select(Abbr, Division) %&gt;% 
+  mutate(Place = c(1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5))
+
+q3 &lt;- q3_1 %&gt;% 
+  group_by(Division) %&gt;% 
+  pivot_wider(names_from = Division, values_from = Abbr)
+q3</code></pre>
+<pre><code>## # A tibble: 5 × 7
+##   Place `AL Central` `AL East` `AL West` `NL Central` `NL East` `NL West`
+##   &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;     &lt;chr&gt;     &lt;chr&gt;        &lt;chr&gt;     &lt;chr&gt;    
+## 1     1 CHW          TBR       HOU       MIL          ATL       SFG      
+## 2     2 CLE          BOS       SEA       STL          PHI       LAD      
+## 3     3 DET          NYY       OAK       CIN          NYM       SDP      
+## 4     4 KCR          TOR       LAA       CHC          MIA       COL      
+## 5     5 MIN          BAL       TEX       PIT          WSN       ARI</code></pre>
+<p>Some are calling Shohei Ohtani, who had an historic season in 2021, the modern day Babe Ruth. I decided to search for other pitchers who swung that bat quite a bit in 2021.</p>
+<p>I began by filtering the csv files to find players that had 50+ plate appearances (PA) AND 50+ innings pitched (IP). After finding these players, I created a data frame that joined their batting stats (PA, BA, HR, OPS) and pitching stats (IP, ERA, SO) while retaining their names and team abbreviations. Finally, I sorted the data frame by OPS from highest to lowest.</p>
+<pre class="r"><code>q4_1 &lt;- player_bat_basic %&gt;% 
+  filter(PA &gt;= 50)
+q4_2 &lt;- player_pitch_basic %&gt;% 
+  filter(IP &gt;= 50)
+
+q4 &lt;- q4_1 %&gt;% 
+  semi_join(q4_2, by = &quot;ID&quot;)
+
+q4ids &lt;- q4 %&gt;% 
+  pull(ID)
+
+checkids &lt;- str_c(q4ids, collapse = &quot;|&quot;)
+
+ans1 &lt;-  q4_1 %&gt;% 
+  filter(str_detect(ID, checkids)) %&gt;% 
+  select(Name, Tm, PA, BA, HR, OPS)
+n = 0
+ans2 &lt;-  q4_2 %&gt;% 
+  filter(str_detect(ID, checkids)) %&gt;% 
+  select(Name, ERA, SO, IP)
+
+ans &lt;- ans1 %&gt;% 
+  full_join(ans2) %&gt;% 
+  arrange(desc(OPS))
+
+ans &lt;- ans %&gt;% 
+  mutate(rep = case_when(
+    str_sub(Name) == &quot;Jon Lester&quot; &amp; (!ERA == 4.71) ~ &quot;repeat&quot;, 
+    str_sub(Name) == &quot;Max Scherzer&quot; &amp; (!ERA == 2.46) ~ &quot;repeat&quot;)) %&gt;% 
+  filter(is.na(rep)) %&gt;% 
+  select(-rep) %&gt;% 
+  print(n = 10, width = Inf)</code></pre>
+<pre><code>## # A tibble: 30 × 9
+##    Name              Tm       PA    BA    HR   OPS ERA      SO    IP
+##    &lt;chr&gt;             &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1 Shohei Ohtani     LAA     639 0.257    46 0.965 3.18    156  130.
+##  2 German Marquez    COL      60 0.264     1 0.679 4.40    176  180 
+##  3 Max Fried         ATL      67 0.273     0 0.649 3.04    158  165.
+##  4 Jon Lester        TOT      51 0.167     1 0.471 4.71     91  141.
+##  5 Wade Miley        CIN      59 0.185     0 0.469 3.37    125  163 
+##  6 Julio Urias       LAD      70 0.203     0 0.454 2.96    195  185.
+##  7 Logan Webb        SFG      53 0.13      1 0.449 3.03    158  148.
+##  8 Aaron Nola        PHI      63 0.143     0 0.416 4.63    223  180.
+##  9 Madison Bumgarner ARI      52 0.103     0 0.408 4.67    124  146.
+## 10 Kevin Gausman     SFG      62 0.185     0 0.396 2.81    227  192 
+## # … with 20 more rows</code></pre>
+<p>Last, I created a boxplot that represents the OPS’s of the players from the data frame above.</p>
+<pre class="r"><code>ggplot(data = ans, mapping = aes(y = OPS)) + 
+  geom_boxplot() + 
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())</code></pre>
+<p><img src="/english/projects/mlbproj/MLB2021_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>

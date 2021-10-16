@@ -1,13 +1,17 @@
   [[main]]
-  name = "Home"
-  identifier = "home"
+  name = "About Me"
+  identifier = "aboutme"
   weight = 100
   url = "/about/"
 
   [[main]]
-  name = "Posts"
+  name = "Projects"
   weight = 200
-  identifier = "posts"
-  url = "/post/"
+  identifier = "projects"
+  url = "/projects/"
 
-
+[[main]]
+  name = "Resume"
+  weight = 300
+  identifier = "resume"
+  url = "/resume/" 
