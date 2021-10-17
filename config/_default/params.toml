@@ -2,16 +2,16 @@
 title = "Jack Wallenta"
 author = "Jack Wallenta"
 #copyright = "2020-2021"
-description = "Welcome to my website! This home page displays my most recent projects. To view all of them please see the Projects tab next to About Me."
+description = "Welcome!"
 profilePicture = "images/compositesoph.jpg"
 keywords = ""
-favicon = "favicons/jicon.ico" 
+favicon = "favicons/j.png" 
 # example ["css/custom.css"]
 customCss = []
 # example ["js/custom.js"]
 customJs = [] 
 mainSections = ["projects"]
-images = ["images/site-feature-image.png"]
+postSectionName = "projects"
 doNotLoadAnimations = false
 # Form Spree Contact Form
 #contactFormAction = "https://formspree.io/f/your-form-hash-here"
@@ -26,11 +26,9 @@ doNotLoadAnimations = false
 # CommentoURL = "https://commento.example.com/js/commento.js"
 # Read More links for truncated summaries
 #readMore = true
-#postSectionName = "blog"
-
 
 [simpleAnalytics]
-# enable = true
+#enable = true
 # customurl = "https://analytics.example.com"
 
 ## Math settings

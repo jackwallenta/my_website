@@ -6,7 +6,7 @@ aliases:
 - showcase
 - docs
 author: Jack Wallenta
-tags:
-- index
+tags: 
+
 title: Projects
 ---
