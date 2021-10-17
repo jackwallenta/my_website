@@ -1,0 +1,256 @@
+---
+date: "2021-10-10"
+title: Airports (R)
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<p>In the following code, I read in csv files that contained data from the Chicago O’Hare airport from 2016-2020. Then, I:
+- Combined the files into one data set
+- Added columns for the year, month, day, and day of the week
+- Renamed/removed a few variables
+- Rearanged the columns
+- Printed the first 10 rows</p>
+<pre class="r"><code>ord16 &lt;- read_csv(&quot;ORD-2016.csv&quot;)
+ord17 &lt;-  read_csv(&quot;ORD-2017.csv&quot;)
+ord18 &lt;-  read_csv(&quot;ORD-2018.csv&quot;)
+ord19 &lt;-  read_csv(&quot;ORD-2019.csv&quot;)
+ord20 &lt;-  read_csv(&quot;ORD-2020.csv&quot;)
+ord &lt;- bind_rows(ord16, ord17, ord18, ord19, ord20)
+
+ord1 &lt;- ord %&gt;% 
+  select(-terminal) %&gt;%
+  rename(passengers = all_total,
+         flights = all_flights,
+         booths = all_booths) %&gt;%
+  mutate(year = year(date)) %&gt;% 
+  mutate(month = month(date, label = TRUE, abbr = TRUE)) %&gt;% 
+  mutate(day = day(date)) %&gt;% 
+  mutate(wday = wday(date, label = TRUE, abbr = FALSE)) %&gt;% 
+select(date, year, month, day, wday, everything()) %&gt;% 
+  arrange(date, hour)
+  
+(head(ord1, n = 10))</code></pre>
+<pre><code>## # A tibble: 10 × 24
+##    date        year month   day wday   airport hour        us_avg_wait us_max_wait
+##    &lt;date&gt;     &lt;dbl&gt; &lt;ord&gt; &lt;int&gt; &lt;ord&gt;  &lt;chr&gt;   &lt;chr&gt;             &lt;dbl&gt;       &lt;dbl&gt;
+##  1 2016-01-01  2016 Jan       1 Friday ORD     0000 - 0100           8          15
+##  2 2016-01-01  2016 Jan       1 Friday ORD     0400 - 0500          28          40
+##  3 2016-01-01  2016 Jan       1 Friday ORD     0500 - 0600          12          44
+##  4 2016-01-01  2016 Jan       1 Friday ORD     0700 - 0800           4          25
+##  5 2016-01-01  2016 Jan       1 Friday ORD     0800 - 0900           8          38
+##  6 2016-01-01  2016 Jan       1 Friday ORD     0900 - 1000           5          14
+##  7 2016-01-01  2016 Jan       1 Friday ORD     1000 - 1100          40          77
+##  8 2016-01-01  2016 Jan       1 Friday ORD     1100 - 1200           3          15
+##  9 2016-01-01  2016 Jan       1 Friday ORD     1200 - 1300           8          34
+## 10 2016-01-01  2016 Jan       1 Friday ORD     1300 - 1400          13          52
+## # … with 15 more variables: non_us_avg_wait &lt;dbl&gt;, non_us_max_wait &lt;dbl&gt;,
+## #   all_avg_wait &lt;dbl&gt;, all_max_wait &lt;dbl&gt;, all_n_0_15 &lt;dbl&gt;,
+## #   all_n_16_30 &lt;dbl&gt;, all_n_31_45 &lt;dbl&gt;, all_n_46_60 &lt;dbl&gt;, all_n_61_90 &lt;dbl&gt;,
+## #   all_n_91_120 &lt;dbl&gt;, all_n_120_plus &lt;dbl&gt;, all_excluded &lt;dbl&gt;,
+## #   passengers &lt;dbl&gt;, flights &lt;dbl&gt;, booths &lt;dbl&gt;</code></pre>
+<pre class="r"><code>rm(ord16, ord17, ord18, ord19, ord20)</code></pre>
+<p>Next I checked if there were any missing dates in the range from January 1, 2016 to December 31, 2020 that are missing? Sure enough, there were eight of them:</p>
+<pre class="r"><code>possible_dates &lt;- seq(as.Date(&quot;2016/1/1&quot;), as.Date(&quot;2020/12/31&quot;), &quot;days&quot;)
+pd &lt;- as_tibble(possible_dates) %&gt;% 
+  rename(date = value)
+
+ans &lt;- ord1 %&gt;% 
+  select(date) %&gt;%
+  distinct()
+
+ans2 &lt;- anti_join(pd, ans, by = &quot;date&quot;)
+ans2</code></pre>
+<pre><code>## # A tibble: 8 × 1
+##   date      
+##   &lt;date&gt;    
+## 1 2016-03-07
+## 2 2016-03-08
+## 3 2016-03-09
+## 4 2018-05-08
+## 5 2019-10-28
+## 6 2019-10-29
+## 7 2019-10-30
+## 8 2020-02-08</code></pre>
+<p>Below I created a bar chart that shows the number of passengers that arrived at O’Hare for each month of each year:</p>
+<pre class="r"><code>q3_1 &lt;- ord1 %&gt;%
+  select(year, month, passengers) %&gt;% 
+  group_by(month, year) %&gt;% 
+  summarize(n = n(), passengers = sum(passengers)) %&gt;% 
+  select(year, month, passengers)
+  
+ggplot(data = q3_1) +
+  geom_col(mapping = aes(x = month, y = passengers, fill = as.character(year)), position = &quot;dodge&quot;) +
+  scale_y_continuous(labels = label_comma()) +
+  guides(fill = guide_legend(title=&quot;Year&quot;)) +
+  xlab(&quot;Month&quot;) +
+  ylab(&quot;Passengers&quot;) +
+  ggtitle(&quot;O&#39;Hare Airport Passengers&quot;)</code></pre>
+<p><img src="/english/projects/airports/airport_files/figure-html/unnamed-chunk-3-1.png" width="672" />
+We see that 2020 passenger totals were way lower than 2019 (due to COVID-19) and that there are the most passenger arrivals during the summer (Jun-Aug), peaking in July.</p>
+<p>Then, I created a table to find the average number of passengers per day of the week for each year. I graphed the data first all together, then separately by year.</p>
+<pre class="r"><code>q4 &lt;- ord1 %&gt;%
+  select(wday, year, passengers) %&gt;% 
+  group_by(wday, year) %&gt;% 
+  summarize(n = n(), avg_passengers = sum(passengers) / n) %&gt;% 
+  select(-n)
+q4  </code></pre>
+<pre><code>## # A tibble: 35 × 3
+## # Groups:   wday [7]
+##    wday    year avg_passengers
+##    &lt;ord&gt;  &lt;dbl&gt;          &lt;dbl&gt;
+##  1 Sunday  2016           780.
+##  2 Sunday  2017           834.
+##  3 Sunday  2018           874.
+##  4 Sunday  2019           902.
+##  5 Sunday  2020           364.
+##  6 Monday  2016           741.
+##  7 Monday  2017           783.
+##  8 Monday  2018           796.
+##  9 Monday  2019           822.
+## 10 Monday  2020           345.
+## # … with 25 more rows</code></pre>
+<pre class="r"><code>graph &lt;- ggplot(data = q4) +
+  geom_col(mapping = aes(x = wday, y = avg_passengers, fill = as.character(year)), position = &quot;dodge&quot;) +
+  scale_y_continuous(labels = label_comma()) +
+  guides(fill = guide_legend(title=&quot;Year&quot;)) +
+  xlab(&quot;Day of the Week&quot;) +
+  ylab(&quot;Average Passengers&quot;) +
+  ggtitle(&quot;O&#39;Hare Airport Passengers&quot;) +
+  coord_flip() 
+graph</code></pre>
+<p><img src="/english/projects/airports/airport_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>graph2 &lt;- graph + facet_wrap( ~ year, nrow = 2)
+graph2</code></pre>
+<p><img src="/english/projects/airports/airport_files/figure-html/unnamed-chunk-4-2.png" width="672" />
+We can see that Saturday has the highest average number of passenger arrivals per year and Tuesday has the lowest.</p>
+<p>In the following code, I:
+- Added a season column
+- Created a scatter plot of the average wait times of US and non-US passport holders
+- Grouped the points by their season
+- Added a constant slope line = 1 for each season
+- Added regression line for each season</p>
+<pre class="r"><code>q6 &lt;- ord1 %&gt;% 
+  select(date, us_avg_wait, non_us_avg_wait) %&gt;% 
+  mutate(month = month(date)) %&gt;%
+  mutate(year = year(date)) %&gt;% 
+  mutate( Season = case_when(
+      month == 3 | month == 4 | month == 5 ~ &quot;Spring&quot;,
+      month == 6 | month == 7 | month == 8 ~ &quot;Summer&quot;,
+      month == 9 | month == 10 | month == 11 ~ &quot;Fall&quot;,
+      month == 12 | month == 1 | month == 2 ~ &quot;Winter&quot;)) %&gt;% 
+  select(-date, -month) 
+q6</code></pre>
+<pre><code>## # A tibble: 31,928 × 4
+##    us_avg_wait non_us_avg_wait  year Season
+##          &lt;dbl&gt;           &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; 
+##  1           8               5  2016 Winter
+##  2          28              29  2016 Winter
+##  3          12              23  2016 Winter
+##  4           4              15  2016 Winter
+##  5           8              17  2016 Winter
+##  6           5              23  2016 Winter
+##  7          40              55  2016 Winter
+##  8           3               4  2016 Winter
+##  9           8              12  2016 Winter
+## 10          13              22  2016 Winter
+## # … with 31,918 more rows</code></pre>
+<pre class="r"><code>ggplot(data = q6, mapping = aes(x = us_avg_wait, y = non_us_avg_wait)) +
+  xlab(&quot;Average US Passenger Wait Time&quot;) +
+  ylab(&quot;Average Non-US Passenger Wait Time&quot;)+
+  ggtitle(&quot;Non-US vs. US Passenger Wait Times&quot;) +
+  geom_point(mapping = aes(color = Season), alpha = 1/2) + 
+  geom_smooth(mapping = aes(color = Season),method = &quot;lm&quot;) +
+  geom_abline(mapping = aes(intercept = 0, slope = 1)) +
+  facet_wrap( ~ year, nrow = 2)</code></pre>
+<p><img src="/english/projects/airports/airport_files/figure-html/unnamed-chunk-5-1.png" width="672" />
+We see the regression lines show a steady pattern that US passengers wait shorter times than non US citizens (every one of them has a slope &gt; 1). Also, spring and summer typically have longer wait times than fall and winter.</p>
+<p>The code below calculates the proportion of cases where the average time to get through customs is greater for non US passport holders than it is for passport holders:</p>
+<pre class="r"><code>q7 &lt;- ord1 %&gt;% 
+  select(date, us_avg_wait, non_us_avg_wait) %&gt;% 
+  mutate(year = year(date)) %&gt;%
+  filter(us_avg_wait &lt; non_us_avg_wait) %&gt;% 
+  select(-date) %&gt;% 
+  group_by(year) %&gt;% 
+  summarize(n = n())
+
+q7_total &lt;- ord1 %&gt;% 
+  group_by(year) %&gt;% 
+  summarize(total = n())
+
+ans &lt;- full_join(q7, q7_total, by = &quot;year&quot;) %&gt;% 
+  mutate(proportion = n/total) %&gt;% 
+  select(-n, -total)
+ans</code></pre>
+<pre><code>## # A tibble: 5 × 2
+##    year proportion
+##   &lt;dbl&gt;      &lt;dbl&gt;
+## 1  2016      0.914
+## 2  2017      0.889
+## 3  2018      0.919
+## 4  2019      0.937
+## 5  2020      0.873</code></pre>
+<p>As seen above, proportion = cases where average wait time for non US citizens &gt; average wait time of non-US citizens… These proportions contain values of y &gt; x for each case in its respective year. It makes sense that on average folks who have a passport would get through customs faster than those without a passport.</p>
+<p>Lastly, I:
+- Added a column named booth_rate that estimates the average number of passengers per booth per hour
+- Added a column named time_of_day which can be overnight, early morning, morning, afternoon, early evening, or late evening based on the hour variable
+- Reordered the columns
+- Filtered out cases with less than 200 passengers, a wait time of zero, or a booth rate above 500
+- Created a boxplot of booth rates versus day of the week
+- Created another boxplot that displays the data by time of day as well</p>
+<pre class="r"><code>q8 &lt;- ord1 %&gt;% 
+  mutate(
+    booth_rate = (passengers / booths) / (all_avg_wait/ 60))
+
+q8_1 &lt;- q8 %&gt;% 
+  mutate(
+    time_of_day = case_when(
+      hour == &quot;0100 - 0200&quot; | hour == &quot;0200 - 0300&quot; | hour == &quot;0300 - 0400&quot; | hour == &quot;0400 - 0500&quot; ~ &quot;Overnight&quot;,
+      hour == &quot;0500 - 0600&quot; | hour == &quot;0600 - 0700&quot; | hour == &quot;0700 - 0800&quot;  ~ &quot;Early Morning&quot;,
+      hour == &quot;0800 - 0900&quot; | hour == &quot;0900 - 1000&quot; | hour == &quot;1000 - 1100&quot; | hour == &quot;1100 - 1200&quot; ~ &quot;Morning&quot;,
+      hour == &quot;1200 - 1300&quot; | hour == &quot;1300 - 1400&quot; | hour == &quot;1400 - 1500&quot; | hour == &quot;1500 - 1600&quot; | hour == &quot;1600 - 1700&quot; ~ &quot;Afternoon&quot;,
+      hour == &quot;1700 - 1800&quot; | hour == &quot;1800 - 1900&quot; | hour == &quot;1900 - 2000&quot; ~ &quot;Early Evening&quot;,
+      hour == &quot;2000 - 2100&quot; | hour == &quot;2100 - 2200&quot; | hour == &quot;2200 - 2300&quot; | hour == &quot;2300 - 0000&quot; | hour == &quot;0000 - 0100&quot; ~ &quot;Late Evening&quot;,)) %&gt;% 
+  filter(passengers &gt; 199, all_avg_wait != 0, booth_rate &lt; 500) %&gt;%  
+  select(wday, booth_rate, time_of_day) 
+  
+q8_1 &lt;- q8_1 %&gt;%
+  mutate(i = case_when(
+    time_of_day == &quot;Overnight&quot; ~ 1, 
+    time_of_day == &quot;Early Morning&quot; ~ 2, 
+    time_of_day == &quot;Morning&quot; ~ 3, 
+    time_of_day == &quot;Afternoon&quot; ~ 4, 
+    time_of_day == &quot;Early Evening&quot; ~ 5, 
+    time_of_day == &quot;Late Evening&quot; ~ 6))
+
+ans &lt;- q8_1 %&gt;% 
+  arrange(i) %&gt;% 
+  select(wday, booth_rate, time_of_day)
+ans</code></pre>
+<pre><code>## # A tibble: 23,419 × 3
+##    wday     booth_rate time_of_day
+##    &lt;ord&gt;         &lt;dbl&gt; &lt;chr&gt;      
+##  1 Sunday        368.  Overnight  
+##  2 Monday         56.3 Overnight  
+##  3 Saturday       74.7 Overnight  
+##  4 Sunday        174.  Overnight  
+##  5 Saturday      300   Overnight  
+##  6 Saturday      186.  Overnight  
+##  7 Sunday        447.  Overnight  
+##  8 Saturday      236.  Overnight  
+##  9 Sunday        108   Overnight  
+## 10 Sunday        141.  Overnight  
+## # … with 23,409 more rows</code></pre>
+<pre class="r"><code>a &lt;- ggplot(ans) +
+  geom_boxplot(aes(x = wday, y = booth_rate, fill = wday)) +
+  theme(axis.text.x = element_blank())+
+  ylab(&quot;Booth Rate&quot;)+
+  guides(fill = guide_legend(title=&quot;Day of Week&quot;))
+a</code></pre>
+<p><img src="/english/projects/airports/airport_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>b &lt;- a +
+  facet_wrap( ~ time_of_day, nrow = 2) 
+b</code></pre>
+<p><img src="/english/projects/airports/airport_files/figure-html/unnamed-chunk-7-2.png" width="672" />
+We see that Wednesday’s have the slowest average booth rate for day of the week while early morning an average has the slowest booth rate for time of day.</p>
