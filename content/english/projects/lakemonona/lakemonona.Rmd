@@ -1,0 +1,126 @@
+---
+date: "2021-09-21"
+title: Lake Monona & Exoplanets (R)
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE)
+library(tidyverse)
+library(lubridate)
+library(scales)
+```
+    
+```{r read-data, echo = FALSE}
+## The echo = FALSE argument to this chunk
+##   means that the code will not appear in the output
+##   but the code will run so that the data is in the session
+
+## Read Lake Monona data
+## Remove rows with missing data
+monona = read_csv("lake-monona-winters-2021.csv") %>%
+  drop_na()
+```
+
+In the following code I read in a csv file that contained data about Lake Monona in Madison, Wisconsin and created a histogram to display winter durations. 
+
+```{r}
+ggplot(monona) +
+  geom_histogram(aes(x = duration), 
+  fill = "darkslategray1",
+  color = "black",
+  binwidth = 5,
+  center = 70) +
+  xlab("Days Frozen") +
+  ylab("Occurances (Years)") +
+  ggtitle("Lake Monona: Freeze Durations: 1855-2020")
+```
+
+Next, I created a line plot and estimated the winter duration trend through the years.
+
+```{r}
+ggplot(monona, aes(x = year1, y = duration)) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  geom_smooth(method="lm", se=FALSE, color = "red") +
+  xlab("Year") +
+  ylab("Days Frozen") +
+  ggtitle("Lake Monona: Freeze Durations: 1855-2020")
+```
+
+```{r echo = FALSE}
+## Fit the model
+fit = lm(duration ~ year1, data = monona)
+
+## Add fitted values and residuals to the data set
+monona = monona %>% 
+  mutate(fitted = fitted(fit),
+         residuals = residuals(fit))
+```
+
+Then, I created a variable for the residials of the freeze durations. The code below creates a plot of said residuals versus each year with another trend line.
+
+```{r}
+ggplot(monona, aes(x = year1, y = residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  geom_smooth(se = FALSE) +
+  xlab("Year") +
+  ylab("Residuals: Days Frozen") + 
+  ggtitle("Lake Monona: Freeze Durations: 1855-2020")
+```
+
+I made a new variable again; this time to count the number of days after June 30 on which Lake Monona first freezes. Below is a histogram that displays this new data:
+
+```{r echo = FALSE}
+## add winter_day = #days of first freeze after June 30
+monona = monona %>% 
+  mutate(winter_day = as.numeric(
+    first_freeze - ymd(str_c(year1,"-06-30"))))
+```
+
+```{r}
+ggplot(monona, aes(x = winter_day)) +
+  geom_histogram(binwidth = 5, center = 154, color = "black", fill = "bisque") +
+  scale_x_continuous(
+    breaks = c(154, 169, 184, 199, 214),
+    label = c("Dec 1", "Dec 16", "Dec 31", "Jan 15", "Jan 30")) +
+  xlab("Days after June 30") +
+  ylab("Count") +
+  ggtitle("Lake Monona: First Freeze Distribution",
+          subtitle = "1855 - 2021")
+```
+
+I switched gears and read in data from a csv file about exoplanets. Below I modified the data and created a couple graphs.
+
+```{r}
+exo = read_csv("exoplanets_default_2021-06-15.csv", skip = 100) %>% 
+  select(pl_name, hostname, discoverymethod, pl_bmasse) %>%
+  rename(planet = pl_name,
+         star = hostname,
+         method = discoverymethod,
+         mass = pl_bmasse) %>% 
+  drop_na(mass)
+```
+
+```{r}
+ggplot(exo, aes(x = method, y = mass)) +
+  geom_boxplot() +
+  scale_y_continuous(trans = "log10", label = comma) +
+  xlab("Method of Detection") +
+  ylab("Mass (Earth masses)") +
+  coord_flip()
+```
+
+
+```{r}
+ggplot(exo) +
+  geom_density(aes(x = mass),
+             fill = "blue",
+             color = "black") +
+  xlab("Earth Masses")  +
+  ylab("Density") +
+  ggtitle("Planet Mass Density") +
+scale_x_continuous(trans = "log10", label = comma)  
+```
+
+

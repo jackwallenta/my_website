@@ -1,0 +1,72 @@
+---
+date: "2021-09-21"
+title: Lake Monona & Exoplanets (R)
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<p>In the following code I read in a csv file that contained data about Lake Monona in Madison, Wisconsin and created a histogram to display winter durations.</p>
+<pre class="r"><code>ggplot(monona) +
+  geom_histogram(aes(x = duration), 
+  fill = &quot;darkslategray1&quot;,
+  color = &quot;black&quot;,
+  binwidth = 5,
+  center = 70) +
+  xlab(&quot;Days Frozen&quot;) +
+  ylab(&quot;Occurances (Years)&quot;) +
+  ggtitle(&quot;Lake Monona: Freeze Durations: 1855-2020&quot;)</code></pre>
+<p><img src="/english/projects/lakemonona/lakemonona_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p>Next, I created a line plot and estimated the winter duration trend through the years.</p>
+<pre class="r"><code>ggplot(monona, aes(x = year1, y = duration)) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  geom_smooth(method=&quot;lm&quot;, se=FALSE, color = &quot;red&quot;) +
+  xlab(&quot;Year&quot;) +
+  ylab(&quot;Days Frozen&quot;) +
+  ggtitle(&quot;Lake Monona: Freeze Durations: 1855-2020&quot;)</code></pre>
+<p><img src="/english/projects/lakemonona/lakemonona_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>Then, I created a variable for the residials of the freeze durations. The code below creates a plot of said residuals versus each year with another trend line.</p>
+<pre class="r"><code>ggplot(monona, aes(x = year1, y = residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = &quot;red&quot;, linetype = &quot;dashed&quot;) +
+  geom_smooth(se = FALSE) +
+  xlab(&quot;Year&quot;) +
+  ylab(&quot;Residuals: Days Frozen&quot;) + 
+  ggtitle(&quot;Lake Monona: Freeze Durations: 1855-2020&quot;)</code></pre>
+<p><img src="/english/projects/lakemonona/lakemonona_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>I made a new variable again; this time to count the number of days after June 30 on which Lake Monona first freezes. Below is a histogram that displays this new data:</p>
+<pre class="r"><code>ggplot(monona, aes(x = winter_day)) +
+  geom_histogram(binwidth = 5, center = 154, color = &quot;black&quot;, fill = &quot;bisque&quot;) +
+  scale_x_continuous(
+    breaks = c(154, 169, 184, 199, 214),
+    label = c(&quot;Dec 1&quot;, &quot;Dec 16&quot;, &quot;Dec 31&quot;, &quot;Jan 15&quot;, &quot;Jan 30&quot;)) +
+  xlab(&quot;Days after June 30&quot;) +
+  ylab(&quot;Count&quot;) +
+  ggtitle(&quot;Lake Monona: First Freeze Distribution&quot;,
+          subtitle = &quot;1855 - 2021&quot;)</code></pre>
+<p><img src="/english/projects/lakemonona/lakemonona_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>I switched gears and read in data from a csv file about exoplanets. Below I modified the data and created a couple graphs.</p>
+<pre class="r"><code>exo = read_csv(&quot;exoplanets_default_2021-06-15.csv&quot;, skip = 100) %&gt;% 
+  select(pl_name, hostname, discoverymethod, pl_bmasse) %&gt;%
+  rename(planet = pl_name,
+         star = hostname,
+         method = discoverymethod,
+         mass = pl_bmasse) %&gt;% 
+  drop_na(mass)</code></pre>
+<pre class="r"><code>ggplot(exo, aes(x = method, y = mass)) +
+  geom_boxplot() +
+  scale_y_continuous(trans = &quot;log10&quot;, label = comma) +
+  xlab(&quot;Method of Detection&quot;) +
+  ylab(&quot;Mass (Earth masses)&quot;) +
+  coord_flip()</code></pre>
+<p><img src="/english/projects/lakemonona/lakemonona_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(exo) +
+  geom_density(aes(x = mass),
+             fill = &quot;blue&quot;,
+             color = &quot;black&quot;) +
+  xlab(&quot;Earth Masses&quot;)  +
+  ylab(&quot;Density&quot;) +
+  ggtitle(&quot;Planet Mass Density&quot;) +
+scale_x_continuous(trans = &quot;log10&quot;, label = comma)  </code></pre>
+<p><img src="/english/projects/lakemonona/lakemonona_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>

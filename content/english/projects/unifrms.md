@@ -1,6 +1,6 @@
 ---
 date: "2021-05-23"
-title: Social Media Management
+title: Social Media Management (Other)
 ---
 **Instagram:**
 
