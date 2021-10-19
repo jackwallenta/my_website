@@ -111,7 +111,6 @@ ggplot(exo, aes(x = method, y = mass)) +
   coord_flip()
 ```
 
-
 ```{r}
 ggplot(exo) +
   geom_density(aes(x = mass),
@@ -123,4 +122,58 @@ ggplot(exo) +
 scale_x_continuous(trans = "log10", label = comma)  
 ```
 
+I read in the same exoplanet data again, this time saving in in a variable named planets. I changed the some of the variable names and created a table that shows the number of planets discovered in 2000, 2005, 2010, and 2015.
 
+```{r}
+planets = read_csv("exoplanets_default_2021-06-15.csv",
+                   skip = 100) %>% 
+  select(pl_name, hostname, discoverymethod, disc_year, sy_pnum, pl_rade, pl_bmasse) %>%
+  rename(planet = pl_name,
+         star = hostname,
+         method = discoverymethod,
+         year = disc_year,
+         number = sy_pnum,
+         radius = pl_rade,
+         mass = pl_bmasse)
+
+df <- filter(planets, year == 2000 | year == 2005 | year == 2010 | year == 2015) %>%
+  count(year)
+df 
+```
+
+Below I sorted the planets by their method of discovery and totaled them up:
+
+```{r}
+count_planets <- planets %>% 
+  group_by(method) %>% 
+  summarise(n = n()) %>% 
+  arrange(desc(n))
+count_planets
+```
+
+We can see that majority of the planets were found using the Transit method. Here is a graph of the above data:
+
+```{r}
+ggplot(count_planets) +
+
+geom_col(aes(x = reorder(method, -n), y = n), fill = "chocolate4") + 
+  ggtitle("Planet Discovery Methods") +
+  xlab("Method of Discovery") +
+  ylab("Count")+
+  theme(axis.text.x = element_text(angle=45, hjust=1) )
+```
+
+To finish, I created a data set with one row per star and a column for the number of planets found by each star. Then, I found the mean and median of the data set.
+
+```{r}
+stars <- planets %>% 
+  group_by(star) %>% 
+  summarise(n = n()) %>% 
+  arrange(desc(n))
+
+stars
+```
+```{r}
+stars %>% 
+  summarise( mean = mean(n), median = median(n))
+```

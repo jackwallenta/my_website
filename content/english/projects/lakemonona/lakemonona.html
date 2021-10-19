@@ -70,3 +70,81 @@ title: Lake Monona & Exoplanets (R)
   ggtitle(&quot;Planet Mass Density&quot;) +
 scale_x_continuous(trans = &quot;log10&quot;, label = comma)  </code></pre>
 <p><img src="/english/projects/lakemonona/lakemonona_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>I read in the same exoplanet data again, this time saving in in a variable named planets. I changed the some of the variable names and created a table that shows the number of planets discovered in 2000, 2005, 2010, and 2015.</p>
+<pre class="r"><code>planets = read_csv(&quot;exoplanets_default_2021-06-15.csv&quot;,
+                   skip = 100) %&gt;% 
+  select(pl_name, hostname, discoverymethod, disc_year, sy_pnum, pl_rade, pl_bmasse) %&gt;%
+  rename(planet = pl_name,
+         star = hostname,
+         method = discoverymethod,
+         year = disc_year,
+         number = sy_pnum,
+         radius = pl_rade,
+         mass = pl_bmasse)
+
+df &lt;- filter(planets, year == 2000 | year == 2005 | year == 2010 | year == 2015) %&gt;%
+  count(year)
+df </code></pre>
+<pre><code>## # A tibble: 4 × 2
+##    year     n
+##   &lt;dbl&gt; &lt;int&gt;
+## 1  2000    16
+## 2  2005    36
+## 3  2010    97
+## 4  2015   157</code></pre>
+<p>Below I sorted the planets by their method of discovery and totaled them up:</p>
+<pre class="r"><code>count_planets &lt;- planets %&gt;% 
+  group_by(method) %&gt;% 
+  summarise(n = n()) %&gt;% 
+  arrange(desc(n))
+count_planets</code></pre>
+<pre><code>## # A tibble: 11 × 2
+##    method                            n
+##    &lt;chr&gt;                         &lt;int&gt;
+##  1 Transit                        3336
+##  2 Radial Velocity                 850
+##  3 Microlensing                    108
+##  4 Imaging                          53
+##  5 Transit Timing Variations        21
+##  6 Eclipse Timing Variations        16
+##  7 Pulsar Timing                     7
+##  8 Orbital Brightness Modulation     6
+##  9 Pulsation Timing Variations       2
+## 10 Astrometry                        1
+## 11 Disk Kinematics                   1</code></pre>
+<p>We can see that majority of the planets were found using the Transit method. Here is a graph of the above data:</p>
+<pre class="r"><code>ggplot(count_planets) +
+
+geom_col(aes(x = reorder(method, -n), y = n), fill = &quot;chocolate4&quot;) + 
+  ggtitle(&quot;Planet Discovery Methods&quot;) +
+  xlab(&quot;Method of Discovery&quot;) +
+  ylab(&quot;Count&quot;)+
+  theme(axis.text.x = element_text(angle=45, hjust=1) )</code></pre>
+<p><img src="/english/projects/lakemonona/lakemonona_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>To finish, I created a data set with one row per star and a column for the number of planets found by each star. Then, I found the mean and median of the data set.</p>
+<pre class="r"><code>stars &lt;- planets %&gt;% 
+  group_by(star) %&gt;% 
+  summarise(n = n()) %&gt;% 
+  arrange(desc(n))
+
+stars</code></pre>
+<pre><code>## # A tibble: 3,271 × 2
+##    star           n
+##    &lt;chr&gt;      &lt;int&gt;
+##  1 KOI-351        8
+##  2 TRAPPIST-1     7
+##  3 HD 10180       6
+##  4 HD 219134      6
+##  5 HD 34445       6
+##  6 K2-138         6
+##  7 Kepler-11      6
+##  8 Kepler-20      6
+##  9 Kepler-80      6
+## 10 TOI-178        6
+## # … with 3,261 more rows</code></pre>
+<pre class="r"><code>stars %&gt;% 
+  summarise( mean = mean(n), median = median(n))</code></pre>
+<pre><code>## # A tibble: 1 × 2
+##    mean median
+##   &lt;dbl&gt;  &lt;int&gt;
+## 1  1.35      1</code></pre>
